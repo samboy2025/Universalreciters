@@ -12,6 +12,21 @@ const RecitationChecker = () => {
   const [recording, setRecording] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [processing, setProcessing] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchHistory();
+  }, [user]);
+
+  const fetchHistory = async () => {
+    const { data } = await supabase
+      .from("recitation_attempts")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    setHistory(data || []);
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
   if (!user) return <Navigate to="/auth" />;
@@ -58,6 +73,7 @@ const RecitationChecker = () => {
 
     setProcessing(false);
     toast.success("Recitation analyzed!");
+    fetchHistory();
   };
 
   return (
@@ -148,6 +164,29 @@ const RecitationChecker = () => {
             </div>
           </div>
         )}
+
+        {/* History Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-display font-bold text-foreground mb-6">Recent Attempts</h2>
+          {history.length === 0 ? (
+            <p className="text-muted-foreground font-body">No previous attempts found.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {history.map((h) => (
+                <div key={h.id} className="bg-card rounded-xl p-4 border border-border shadow-soft flex items-center justify-between cursor-pointer hover:border-accent transition-colors" onClick={() => setResult(h)}>
+                  <div>
+                    <p className="font-display font-bold text-foreground">Surah {h.matched_surah}</p>
+                    <p className="text-xs text-muted-foreground font-body">Ayah {h.matched_ayah_start}-{h.matched_ayah_end}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-body font-bold text-accent">{h.score}</p>
+                    <p className="text-[10px] text-muted-foreground font-body">{new Date(h.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
