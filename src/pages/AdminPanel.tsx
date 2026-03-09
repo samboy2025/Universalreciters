@@ -24,18 +24,27 @@ const AdminPanel = () => {
   }, [tab, user, isAdmin]);
 
   const fetchData = async () => {
-    if (tab === "content") {
-      const { data } = await supabase.from("content").select("*").order("created_at", { ascending: false });
-      setPendingContent(data || []);
-    } else if (tab === "users") {
-      const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      setUsers(data || []);
-    } else if (tab === "settings") {
-      const { data } = await supabase.from("admin_settings").select("*").single();
-      setSettings(data);
-    } else if (tab === "transactions") {
-      const { data } = await supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(50);
-      setTransactions(data || []);
+    try {
+      if (tab === "content") {
+        const { data, error } = await supabase.from("content").select("*").order("created_at", { ascending: false });
+        if (error) throw error;
+        setPendingContent(data || []);
+      } else if (tab === "users") {
+        const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+        if (error) throw error;
+        setUsers(data || []);
+      } else if (tab === "settings") {
+        const { data, error } = await supabase.from("admin_settings").select("*").single();
+        if (error) throw error;
+        setSettings(data);
+      } else if (tab === "transactions") {
+        const { data, error } = await supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(50);
+        if (error) throw error;
+        setTransactions(data || []);
+      }
+    } catch (error: any) {
+      console.error(`Error fetching ${tab}:`, error);
+      toast.error(`Failed to load ${tab}`);
     }
   };
 
@@ -44,20 +53,29 @@ const AdminPanel = () => {
   if (!isAdmin) return <Navigate to="/dashboard" />;
 
   const handleContentAction = async (contentId: string, status: "approved" | "rejected") => {
-    await supabase.from("content").update({ status: status as any }).eq("id", contentId);
-    toast.success(`Content ${status}`);
-    fetchData();
+    const { error } = await supabase.from("content").update({ status: status as any }).eq("id", contentId);
+    if (error) {
+      toast.error(`Failed to ${status} content`);
+    } else {
+      toast.success(`Content ${status}`);
+      fetchData();
+    }
   };
 
   const handleSaveSettings = async () => {
     if (!settings) return;
     setSavingSettings(true);
-    await supabase.from("admin_settings").update({
+    const { error } = await supabase.from("admin_settings").update({
       points_buy_rate: settings.points_buy_rate,
       points_sell_rate: settings.points_sell_rate,
       activation_fee: settings.activation_fee,
     }).eq("id", settings.id);
-    toast.success("Settings saved");
+
+    if (error) {
+      toast.error("Failed to save settings");
+    } else {
+      toast.success("Settings saved");
+    }
     setSavingSettings(false);
   };
 

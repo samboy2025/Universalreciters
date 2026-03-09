@@ -11,12 +11,17 @@ const Explore = () => {
 
   useEffect(() => {
     const fetchContent = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("content")
         .select("*, profiles!content_owner_id_fkey(username, display_name)")
         .eq("status", "approved")
         .order("created_at", { ascending: false });
-      setContent(data || []);
+
+      if (error) {
+        console.error("Error fetching content:", error);
+      } else {
+        setContent(data || []);
+      }
       setLoading(false);
     };
     fetchContent();

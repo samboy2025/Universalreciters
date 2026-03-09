@@ -3,9 +3,12 @@ import { Navigate, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Wallet, Upload, Mic, Users, History, Crown } from "lucide-react";
+import { useState } from "react";
+import { WalletDialog } from "@/components/WalletDialog";
 
 const Dashboard = () => {
   const { user, loading, profile, wallet } = useAuth();
+  const [walletAction, setWalletAction] = useState<"fund" | "buy_points" | "sell_points" | null>(null);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
   if (!user) return <Navigate to="/auth" />;
@@ -45,11 +48,17 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <Button variant="gold" size="sm">Fund Wallet</Button>
-              <Button variant="outline" size="sm">Buy Points</Button>
-              <Button variant="outline" size="sm">Sell Points</Button>
+              <Button variant="gold" size="sm" onClick={() => setWalletAction("fund")}>Fund Wallet</Button>
+              <Button variant="outline" size="sm" onClick={() => setWalletAction("buy_points")}>Buy Points</Button>
+              <Button variant="outline" size="sm" onClick={() => setWalletAction("sell_points")}>Sell Points</Button>
             </div>
           </div>
+
+          <WalletDialog
+            type={walletAction}
+            open={!!walletAction}
+            onOpenChange={(open) => !open && setWalletAction(null)}
+          />
 
           <div className="bg-card rounded-xl p-6 shadow-soft border border-border">
             <div className="flex items-center gap-3 mb-4">
