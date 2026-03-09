@@ -39,6 +39,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Link to="/dashboard" className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link>
+              <Link to="/dashboard/wallet" className="text-sm font-body text-muted-foreground hover:text-foreground transition-colors">Wallet</Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -63,6 +64,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Link to="/dashboard" className="block text-sm text-muted-foreground" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link to="/dashboard/wallet" className="block text-sm text-muted-foreground" onClick={() => setMenuOpen(false)}>Wallet</Link>
               <Button variant="ghost" size="sm" onClick={handleLogout}>Log out</Button>
             </>
           ) : (

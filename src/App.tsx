@@ -15,6 +15,7 @@ import ContentDetail from "./pages/ContentDetail";
 import UserProfile from "./pages/UserProfile";
 import AdminPanel from "./pages/AdminPanel";
 import TransactionHistory from "./pages/TransactionHistory";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/wallet" element={<Wallet />} />
             <Route path="/dashboard/history" element={<TransactionHistory />} />
             <Route path="/activate" element={<Activate />} />
             <Route path="/recitation-checker" element={<RecitationChecker />} />
