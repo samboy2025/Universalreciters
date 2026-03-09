@@ -51,7 +51,7 @@ const UploadContent = () => {
         priceNaira: parseFloat(form.priceNaira),
       });
 
-      const { error } = await supabase.from("content").insert({
+      const { error: insertError } = await supabase.from("content").insert({
         owner_id: user.id,
         title: parsed.title,
         description: parsed.description,
@@ -64,7 +64,7 @@ const UploadContent = () => {
         status: "pending" as any,
       });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
       toast.success("Content submitted for moderation!");
       navigate("/dashboard");
     } catch (err: any) {

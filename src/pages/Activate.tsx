@@ -19,38 +19,49 @@ const Activate = () => {
     setProcessing(true);
     try {
       // Mock payment: update wallet, profile, and log transaction
-      await supabase.from("profiles").update({ is_premium: true }).eq("user_id", user.id);
-      await supabase.from("transactions").insert({
+      const { error: profileErr } = await supabase.from("profiles").update({ is_premium: true }).eq("user_id", user.id);
+      if (profileErr) throw profileErr;
+
+      const { error: transErr } = await supabase.from("transactions").insert({
         user_id: user.id,
         type: "activation" as any,
         amount_naira: 1000,
         description: "Premium activation payment",
         reference: `ACT-${Date.now()}`,
       });
+      if (transErr) throw transErr;
 
       // Handle referral bonus
       if (profile?.referred_by) {
-        const { data: referrerProfile } = await supabase
+        const { data: referrerProfile, error: refProfErr } = await supabase
           .from("profiles")
           .select("user_id")
           .eq("id", profile.referred_by)
           .single();
 
-        if (referrerProfile) {
-          await supabase.from("wallets")
-            .update({ balance_points: (await supabase.from("wallets").select("balance_points").eq("user_id", referrerProfile.user_id).single()).data?.balance_points + 1 })
-            .eq("user_id", referrerProfile.user_id);
+        if (refProfErr) {
+          console.error("Error fetching referrer profile:", refProfErr);
+        } else if (referrerProfile) {
+          const { data: walletData, error: walletFetchErr } = await supabase.from("wallets").select("balance_points").eq("user_id", referrerProfile.user_id).single();
+          if (walletFetchErr) throw walletFetchErr;
 
-          await supabase.from("transactions").insert({
+          const { error: walletUpdateErr } = await supabase.from("wallets")
+            .update({ balance_points: (walletData?.balance_points || 0) + 1 })
+            .eq("user_id", referrerProfile.user_id);
+          if (walletUpdateErr) throw walletUpdateErr;
+
+          const { error: refTransErr } = await supabase.from("transactions").insert({
             user_id: referrerProfile.user_id,
             type: "referral_bonus" as any,
             amount_points: 1,
             description: `Referral bonus from ${profile.username}`,
           });
+          if (refTransErr) throw refTransErr;
 
-          await supabase.from("referrals")
+          const { error: referralErr } = await supabase.from("referrals")
             .update({ bonus_awarded: true })
             .eq("referred_id", user.id);
+          if (referralErr) throw referralErr;
         }
       }
 

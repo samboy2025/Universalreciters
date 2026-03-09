@@ -11,12 +11,17 @@ const TransactionHistory = () => {
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("transactions")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
-      setTransactions(data || []);
+
+      if (error) {
+        console.error("Error fetching transactions:", error);
+      } else {
+        setTransactions(data || []);
+      }
     };
     fetch();
   }, [user]);

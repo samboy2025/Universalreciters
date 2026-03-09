@@ -45,7 +45,7 @@ const RecitationChecker = () => {
 
     setResult(mockResult);
 
-    await supabase.from("recitation_attempts").insert({
+    const { error: insertError } = await supabase.from("recitation_attempts").insert({
       user_id: user.id,
       transcript: "بسم الله الرحمن الرحيم الحمد رب العالمين",
       matched_surah: mockResult.matched_surah,
@@ -55,6 +55,11 @@ const RecitationChecker = () => {
       confidence: mockResult.confidence,
       breakdown: mockResult.breakdown,
     });
+
+    if (insertError) {
+      console.error("Error saving recitation attempt:", insertError);
+      toast.error("Failed to save results to history");
+    }
 
     setProcessing(false);
     toast.success("Recitation analyzed!");

@@ -14,21 +14,31 @@ const UserProfile = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data: prof } = await supabase
+      const { data: prof, error: profError } = await supabase
         .from("profiles")
         .select("*")
         .eq("username", username)
         .single();
-      setProfile(prof);
 
-      if (prof) {
-        const { data: items } = await supabase
-          .from("content")
-          .select("*")
-          .eq("owner_id", prof.user_id)
-          .eq("status", "approved")
-          .order("created_at", { ascending: false });
-        setContent(items || []);
+      if (profError) {
+        console.error("Error fetching profile:", profError);
+      } else {
+        setProfile(prof);
+
+        if (prof) {
+          const { data: items, error: contentError } = await supabase
+            .from("content")
+            .select("*")
+            .eq("owner_id", prof.user_id)
+            .eq("status", "approved")
+            .order("created_at", { ascending: false });
+
+          if (contentError) {
+            console.error("Error fetching user content:", contentError);
+          } else {
+            setContent(items || []);
+          }
+        }
       }
       setLoading(false);
     };

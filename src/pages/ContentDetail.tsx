@@ -18,17 +18,30 @@ const ContentDetail = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase.from("content").select("*").eq("id", id).single();
-      setContent(data);
-      if (data) {
-        const { data: prof } = await supabase.from("profiles").select("*").eq("user_id", data.owner_id).single();
-        setOwner(prof);
+      try {
+        const { data, error: contentError } = await supabase.from("content").select("*").eq("id", id).single();
+        if (contentError) throw contentError;
+        setContent(data);
+
+        if (data) {
+          const { data: prof, error: profError } = await supabase.from("profiles").select("*").eq("user_id", data.owner_id).single();
+          if (profError) console.error("Error fetching owner profile:", profError);
+          setOwner(prof);
+        }
+
+        if (user && data) {
+          const { data: unlock, error: unlockError } = await supabase.from("unlocks").select("id").eq("user_id", user.id).eq("content_id", data.id).single();
+          if (unlockError && unlockError.code !== "PGRST116") {
+            console.error("Error checking unlock status:", unlockError);
+          }
+          setUnlocked(!!unlock || data.owner_id === user.id);
+        }
+      } catch (error: any) {
+        console.error("Error fetching content detail:", error);
+        toast.error("Failed to load content");
+      } finally {
+        setLoading(false);
       }
-      if (user && data) {
-        const { data: unlock } = await supabase.from("unlocks").select("id").eq("user_id", user.id).eq("content_id", data.id).single();
-        setUnlocked(!!unlock || data.owner_id === user.id);
-      }
-      setLoading(false);
     };
     fetch();
   }, [id, user]);
@@ -46,26 +59,30 @@ const ContentDetail = () => {
     }
 
     try {
-      await supabase.from("unlocks").insert({
+      const { error: unlockError } = await supabase.from("unlocks").insert({
         user_id: user.id,
         content_id: content.id,
         paid_points: usePoints ? content.price_points : 0,
         paid_naira: usePoints ? 0 : content.price_naira,
       });
+      if (unlockError) throw unlockError;
 
       if (usePoints) {
-        await supabase.from("wallets").update({ balance_points: (wallet?.balance_points || 0) - content.price_points }).eq("user_id", user.id);
+        const { error: walletError } = await supabase.from("wallets").update({ balance_points: (wallet?.balance_points || 0) - content.price_points }).eq("user_id", user.id);
+        if (walletError) throw walletError;
       } else {
-        await supabase.from("wallets").update({ balance_naira: (wallet?.balance_naira || 0) - content.price_naira }).eq("user_id", user.id);
+        const { error: walletError } = await supabase.from("wallets").update({ balance_naira: (wallet?.balance_naira || 0) - content.price_naira }).eq("user_id", user.id);
+        if (walletError) throw walletError;
       }
 
-      await supabase.from("transactions").insert({
+      const { error: transError } = await supabase.from("transactions").insert({
         user_id: user.id,
         type: "unlock" as any,
         amount_points: usePoints ? -content.price_points : 0,
         amount_naira: usePoints ? 0 : -content.price_naira,
         description: `Unlocked: ${content.title}`,
       });
+      if (transError) throw transError;
 
       setUnlocked(true);
       await refreshProfile();
